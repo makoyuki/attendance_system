@@ -1,0 +1,18 @@
+# FeliCa読み取り関連
+nfcpy==1.0.4
+pyscard==2.0.7
+
+# USB通信関連（nfcpyの動作に必要）
+libusb-package>=1.0.26
+libusb1>=3.0.0
+
+# HTTP通信関連
+requests==2.31.0
+urllib3==1.26.18
+certifi==2023.7.22
+
+# 日時処理
+python-dateutil==2.8.2
+
+# ユーティリティ
+colorama==0.4.6
