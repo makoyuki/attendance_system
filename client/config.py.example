@@ -1,0 +1,9 @@
+# config.py.example
+# このファイルを config.py にコピーして設定してください
+# copy config.py.example config.py
+
+# サーバーURL（末尾スラッシュなし）
+SERVER_URL = 'https://your-domain.com'
+
+# APIキー（サーバー側の API_KEY と同じ値）
+API_KEY = 'your-api-key-here'
