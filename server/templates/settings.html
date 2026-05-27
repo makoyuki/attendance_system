@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}通知設定{% endblock %}
+{% block content %}
+<div class="container mt-4" style="max-width:760px">
+  <h2 class="mb-4">通知設定</h2>
+
+  {% if msg %}
+  <div class="alert alert-{{ msg[0] }} alert-dismissible fade show" role="alert">
+    {{ msg[1] }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  <!-- 自動通知設定 -->
+  <form method="post">
+    <input type="hidden" name="action" value="save">
+
+    <div class="card mb-4">
+      <div class="card-header fw-bold">自動通知設定（cron）</div>
+      <div class="card-body">
+
+        <!-- 管理者宛 -->
+        <h6 class="text-muted mb-2">管理者宛（全ユーザー分まとめて）</h6>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="notify_daily" id="notify_daily"
+            {{ 'checked' if s.notify_daily }}>
+          <label class="form-check-label" for="notify_daily">
+            日次通知
+            <small class="text-muted">（毎日 前日分を管理者宛に送付）</small>
+          </label>
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="notify_weekly" id="notify_weekly"
+            {{ 'checked' if s.notify_weekly }}>
+          <label class="form-check-label" for="notify_weekly">
+            週次通知
+            <small class="text-muted">（毎週月曜 前週分を管理者宛に送付）</small>
+          </label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="notify_monthly" id="notify_monthly"
+            {{ 'checked' if s.notify_monthly }}>
+          <label class="form-check-label" for="notify_monthly">
+            月次通知
+            <small class="text-muted">（締め日翌日 前月分を管理者宛に送付）</small>
+          </label>
+        </div>
+
+        <hr>
+
+        <!-- ユーザー個別 -->
+        <h6 class="text-muted mb-2">ユーザー個別送付</h6>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="notify_individual_daily"
+            id="notify_individual_daily"
+            {{ 'checked' if s.notify_individual_daily }}>
+          <label class="form-check-label" for="notify_individual_daily">
+            日次通知（個別）
+            <small class="text-muted">（毎日 各ユーザーに前日分のみ送付）</small>
+          </label>
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="notify_individual_weekly"
+            id="notify_individual_weekly"
+            {{ 'checked' if s.notify_individual_weekly }}>
+          <label class="form-check-label" for="notify_individual_weekly">
+            週次通知（個別）
+            <small class="text-muted">（毎週月曜 各ユーザーに前週分のみ送付）</small>
+          </label>
+        </div>
+        <div class="form-check mb-1">
+          <input class="form-check-input" type="checkbox" name="notify_individual_monthly"
+            id="notify_individual_monthly"
+            {{ 'checked' if s.notify_individual_monthly }}>
+          <label class="form-check-label" for="notify_individual_monthly">
+            月次通知（個別）
+            <small class="text-muted">（締め日翌日 各ユーザーに前月分のみ送付）</small>
+          </label>
+        </div>
+        <div class="ms-4 mb-2">
+          <small class="text-muted">
+            ※ ユーザー管理でメールアドレスが登録されているユーザーのみ対象です
+          </small>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 送付先 -->
+    <div class="card mb-4">
+      <div class="card-header fw-bold">送付先メールアドレス（管理者宛）</div>
+      <div class="card-body">
+        <label for="recipient_emails" class="form-label">
+          メールアドレス
+          <small class="text-muted">（複数の場合はカンマ区切り）</small>
+        </label>
+        <input type="text" class="form-control" name="recipient_emails" id="recipient_emails"
+          value="{{ s.recipient_emails or '' }}"
+          placeholder="admin@example.com, manager@example.com">
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <button type="submit" class="btn btn-primary">設定を保存</button>
+    </div>
+  </form>
+
+  <!-- 手動送信 -->
+  <div class="card mb-4">
+    <div class="card-header fw-bold">手動送信</div>
+    <div class="card-body">
+
+      <!-- 管理者宛 -->
+      <h6 class="text-muted mb-2">管理者宛（全ユーザー分まとめて）</h6>
+      <div class="d-flex gap-2 flex-wrap mb-3">
+        <form method="post" class="d-inline">
+          <input type="hidden" name="action" value="send_test">
+          <button type="submit" class="btn btn-outline-primary">
+            ✉ 管理者宛に全員分送信（前週）
+          </button>
+        </form>
+      </div>
+
+      <hr>
+
+      <!-- ユーザー個別 -->
+      <h6 class="text-muted mb-2">ユーザー個別送付</h6>
+      <div class="d-flex gap-2 flex-wrap">
+
+        <form method="post" class="d-inline">
+          <input type="hidden" name="action" value="send_individual_daily">
+          <button type="submit" class="btn btn-outline-secondary">
+            👤 個別送付（昨日分）
+          </button>
+        </form>
+
+        <form method="post" class="d-inline">
+          <input type="hidden" name="action" value="send_individual_weekly">
+          <button type="submit" class="btn btn-outline-success">
+            👤 個別送付（前週分）
+          </button>
+        </form>
+
+        <form method="post" class="d-inline">
+          <input type="hidden" name="action" value="send_individual_monthly">
+          <button type="submit" class="btn btn-outline-info">
+            👤 個別送付（直近締め期間）
+          </button>
+        </form>
+
+      </div>
+      <div class="mt-2">
+        <small class="text-muted">
+          ※ メールアドレスが登録されているユーザーのみ送付されます
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gmail設定ガイド -->
+  <div class="card mb-4 border-warning">
+    <div class="card-header bg-warning bg-opacity-25 fw-bold">📧 Gmail設定ガイド</div>
+    <div class="card-body">
+      <ol class="mb-0">
+        <li>Googleアカウントの「2段階認証」を有効にする</li>
+        <li>「アプリパスワード」を生成
+          <small class="text-muted">
+            （Googleアカウント → セキュリティ → アプリパスワード）
+          </small>
+        </li>
+        <li>生成された16桁のパスワードを
+          <code>config.py</code> の <code>MAIL_PASSWORD</code> に設定
+        </li>
+        <li><code>MAIL_USERNAME</code> にGmailアドレスを設定</li>
+        <li>サービス再起動:
+          <code>sudo systemctl restart attendance-service</code>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
