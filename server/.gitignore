@@ -1,8 +1,17 @@
 # 設定ファイル（機密情報を含む）
 config.py
 
-# 音声ファイル（任意）
-touch.wav
+# データベース
+data/
+*.db
+*.sqlite3
+
+# 出力ファイル
+output/
+
+# ログ
+logs/
+*.log
 
 # Python
 __pycache__/
@@ -20,14 +29,9 @@ venv/
 .venv/
 env/
 
-# ログ
-*.log
-attendance_reader.log
-
 # OS
 .DS_Store
 Thumbs.db
-desktop.ini
 
 # エディタ
 .vscode/
@@ -37,3 +41,4 @@ desktop.ini
 
 # バックアップ
 *.bak
+*.20[0-9][0-9][0-9][0-9][0-9][0-9]

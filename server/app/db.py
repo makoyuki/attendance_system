@@ -46,6 +46,23 @@ def initialize_db():
             )
         """)
 
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS notification_settings (
+                id               INTEGER PRIMARY KEY CHECK(id=1),
+                notify_daily     INTEGER DEFAULT 0,
+                notify_weekly    INTEGER DEFAULT 1,
+                notify_monthly   INTEGER DEFAULT 0,
+                recipient_emails TEXT    DEFAULT '',
+                updated_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # デフォルト行（週次ONで初期化）
+        cur.execute(
+            "INSERT OR IGNORE INTO notification_settings "
+            "(id, notify_daily, notify_weekly, notify_monthly, recipient_emails) "
+            "VALUES (1, 0, 1, 0, '')"
+        )
+
         conn.commit()
         logging.info("Database initialized")
 

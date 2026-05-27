@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}手動打刻追加{% endblock %}
+{% block nav_logs %}active{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">手動打刻追加</h2>
+
+<div class="col-md-6">
+    <div class="alert alert-warning">
+        <strong>注意:</strong> 手動追加した打刻は端末ID欄に
+        <code>manual</code> と記録されます。
+    </div>
+
+    <form method="post">
+        <div class="mb-3">
+            <label class="form-label">
+                ユーザー <span class="text-danger">*</span>
+            </label>
+            <select class="form-select" name="felica_id" required>
+                <option value="">選択してください</option>
+                {% for user in users %}
+                <option value="{{ user['felica_id'] }}">{{ user['name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">
+                種別 <span class="text-danger">*</span>
+            </label>
+            <select class="form-select" name="log_type" required>
+                <option value="">選択してください</option>
+                <option value="IN">IN（入室）</option>
+                <option value="OUT">OUT（退室）</option>
+            </select>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col">
+                <label class="form-label">
+                    日付 <span class="text-danger">*</span>
+                </label>
+                <input type="date" class="form-control"
+                       name="log_date" value="{{ today }}" required>
+            </div>
+            <div class="col">
+                <label class="form-label">
+                    時刻 <span class="text-danger">*</span>
+                </label>
+                <input type="time" class="form-control" name="log_time" required>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">理由・備考</label>
+            <input type="text" class="form-control" name="reason"
+                   placeholder="例: カード忘れ、打刻漏れ">
+        </div>
+
+        <button type="submit" class="btn btn-primary"
+                onclick="return confirm('手動打刻を追加しますか？')">
+            追加
+        </button>
+        <a href="{{ url_for('admin.log_list') }}" class="btn btn-secondary">戻る</a>
+    </form>
+</div>
+{% endblock %}

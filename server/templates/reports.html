@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}レポート{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">勤怠レポート</h2>
+
+<!-- 検索フォーム -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">開始日</label>
+                <input type="date" class="form-control" name="start" value="{{ start }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">終了日</label>
+                <input type="date" class="form-control" name="end" value="{{ end }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">ユーザー</label>
+                <select class="form-select" name="user_id">
+                    <option value="">全員</option>
+                    {% for user in users %}
+                    <option value="{{ user['user_id'] }}"
+                        {{ 'selected' if selected_user_id == user['user_id']|string }}>
+                        {{ user['name'] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end gap-2 flex-wrap">
+                <button type="submit" class="btn btn-primary">表示</button>
+                {% if report_data %}
+                <a href="{{ url_for('admin.reports_download',
+                           start=start, end=end, user_id=selected_user_id) }}"
+                   class="btn btn-success">
+                    CSV{% if report_data|length > 1 %}(ZIP){% endif %}ダウンロード
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if report_data %}
+    {% for emp in report_data %}
+    <div class="card mb-4">
+        <!-- カードヘッダー: 異常があれば黄色 -->
+        <div class="card-header d-flex justify-content-between align-items-center
+             {{ 'bg-warning' if emp.anomaly_count > 0 else 'bg-secondary text-white' }}">
+            <strong>{{ emp.name }}</strong>
+            <span>
+                合計: {{ emp.total_str }}（{{ emp.daily_data|length }}日）
+                {% if emp.anomaly_count > 0 %}
+                <span class="badge bg-danger ms-2">⚠ 異常 {{ emp.anomaly_count }}件</span>
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:160px">日付</th>
+                        <th>打刻</th>
+                        <th style="width:90px">合計</th>
+                        <th>備考</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in emp.daily_data %}
+                    <tr {{ 'class="table-warning"' if row.anomalies }}>
+                        <td>{{ row.date_str }}</td>
+                        <td>
+                            {% for s in row.sessions %}
+                            <span class="badge bg-primary">IN {{ s.in_str }}</span>
+                            <span class="badge {{ 'bg-danger' if s.midnight_out else 'bg-secondary' }}">
+                                OUT {{ s.out_str }}
+                            </span>
+                            {% if not loop.last %}&ensp;{% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>{{ row.total_str }}</td>
+                        <td>
+                            {% if row.anomalies %}
+                            <small class="text-danger">
+                                ⚠ {{ row.anomalies | join(' / ') }}
+                            </small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-secondary fw-bold">
+                    <tr>
+                        <td colspan="2" class="text-end">合計</td>
+                        <td>{{ emp.total_str }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">対象期間にデータがありません</div>
+{% endif %}
+
+{% endblock %}
