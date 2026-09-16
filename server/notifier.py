@@ -7,7 +7,7 @@ import io
 import csv
 import sqlite3
 import calendar
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from typing import List, Dict, Tuple
 
 from config import DB_PATH, DEFAULT_CUTOFF_DAY
@@ -71,60 +71,38 @@ def detect_anomalies(sessions_by_date: Dict[date, List]) -> List[str]:
     """
     sessions_by_date から異常を検知してメッセージリストを返す
 
-    検知内容:
-      - 退室打刻なし
-      - 日付をまたいで強制退室（out_time が 00:00）
+    検知内容（app/admin.py::_detect_day_anomalies と同じ基準）:
+      - 日付をまたいで強制退室（24:00 強制OUT）
       - 12時間超の長時間勤務
-      - 30分未満の短時間打刻
+      - 30分未満の短時間打刻（前日からの繰越セッションは除外）
     """
     messages = []
     for d in sorted(sessions_by_date.keys()):
         for s in sessions_by_date[d]:
-            # 退室打刻なし
-            if s.in_time and not s.out_time:
+            # 24:00 強制OUT（退室打刻漏れの可能性）
+            if s.midnight_out:
                 messages.append(
-                    f'{d.strftime("%Y/%m/%d")} : 退室打刻なし'
+                    f'{d.strftime("%Y/%m/%d")} : '
+                    f'退室打刻漏れの可能性（日付をまたいで強制退室）'
                 )
-                continue
-
-            if s.in_time and s.out_time:
-                mins = _calc_duration_min(s.in_time, s.out_time)
-
-                # 24:00 強制OUT（out_time が 00:00）
-                if s.out_time.hour == 0 and s.out_time.minute == 0:
-                    messages.append(
-                        f'{d.strftime("%Y/%m/%d")} : '
-                        f'退室打刻漏れの可能性（日付をまたいで強制退室）'
-                    )
-                # 12時間超
-                elif mins > 720:
-                    messages.append(
-                        f'{d.strftime("%Y/%m/%d")} : '
-                        f'長時間勤務（{mins // 60}時間{mins % 60}分）要確認'
-                    )
-                # 30分未満（0は除く）
-                elif 0 < mins < 30:
-                    messages.append(
-                        f'{d.strftime("%Y/%m/%d")} : '
-                        f'短時間打刻（{mins}分）要確認'
-                    )
+            # 12時間超
+            if s.minutes > 720:
+                messages.append(
+                    f'{d.strftime("%Y/%m/%d")} : '
+                    f'長時間勤務（{s.minutes // 60}時間{s.minutes % 60}分）要確認'
+                )
+            # 30分未満（繰越セッションの端数は除く）
+            if s.minutes < 30 and not s.midnight_in:
+                messages.append(
+                    f'{d.strftime("%Y/%m/%d")} : '
+                    f'短時間打刻（{s.minutes}分）要確認'
+                )
     return messages
 
 
 # ─────────────────────────────────────────
 # CSV 生成
 # ─────────────────────────────────────────
-
-def _calc_duration_min(in_t, out_t) -> int:
-    """in_time / out_time が datetime でも time でも対応"""
-    try:
-        return max(0, int((out_t - in_t).total_seconds() / 60))
-    except TypeError:
-        d = date.today()
-        dt_in  = datetime.combine(d, in_t)
-        dt_out = datetime.combine(d, out_t)
-        return max(0, int((dt_out - dt_in).total_seconds() / 60))
-
 
 def _sessions_to_csv(
     sessions_by_date: Dict[date, List],
@@ -154,11 +132,8 @@ def _sessions_to_csv(
         total_min = 0
 
         for s in sessions:
-            in_str  = s.in_time.strftime('%H:%M')  if s.in_time  else ''
-            out_str = s.out_time.strftime('%H:%M') if s.out_time else ''
-            row.extend([in_str, out_str])
-            if s.in_time and s.out_time:
-                total_min += _calc_duration_min(s.in_time, s.out_time)
+            row.extend([s.in_str, s.out_str])
+            total_min += s.minutes
 
         while len(row) < 1 + max_sessions * 2:
             row.append('')
