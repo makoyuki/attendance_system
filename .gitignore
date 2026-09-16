@@ -1,2 +1,7 @@
 # Claude Code 用のプロジェクトメモ（リポジトリには含めない）
 CLAUDE.md
+
+# 秘密情報を含む実際の設定ファイル（*.example のみコミットする）
+server/config.py
+server/.env
+client/config.py

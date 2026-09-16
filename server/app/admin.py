@@ -8,8 +8,6 @@ import os
 
 # admin.py の場合: app/ の1つ上がBASE_DIR
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# こちらも insert(0, ...) に変更
 sys.path.insert(0, BASE_DIR)
 
 import sqlite3
@@ -17,23 +15,14 @@ import csv
 import io
 import zipfile
 import logging
-from notifier import send_admin_report, send_individual_reports, get_prev_week_range, _get_db as get_db
 from functools import wraps
 from datetime import datetime, date, timedelta
 
-from flask import (
-    Blueprint, render_template, request, redirect,
-    url_for, flash, Response, session
-)
 from config  import UPLOAD_FOLDER, ALLOWED_EXTENSIONS, ADMIN_USERNAME, ADMIN_PASSWORD
 from app.db  import get_connection
 
 from processor import process, fetch_logs, _hm, Session
 from mailer    import send_csv_report
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import UPLOAD_FOLDER, ALLOWED_EXTENSIONS, ADMIN_USERNAME, ADMIN_PASSWORD
-from app.db import get_connection
 
 from notifier import (
     send_admin_report,
@@ -317,6 +306,19 @@ def user_edit(user_id):
         else:
             try:
                 with get_connection() as conn:
+                    old = conn.execute(
+                        "SELECT felica_id FROM users WHERE user_id=?", (user_id,)
+                    ).fetchone()
+                    # Felica IDを変更する場合、過去ログが孤立（または将来の再割当てで別人に混入）
+                    # しないよう、同一トランザクションで attendance_logs 側も追従させる。
+                    # defer_foreign_keys で COMMIT 時までFK検査を遅延させ、
+                    # 「親を先に更新すると子が孤立する」状態を経由してもエラーにならないようにする。
+                    conn.execute("PRAGMA defer_foreign_keys = ON")
+                    if old and old['felica_id'] != felica_id:
+                        conn.execute(
+                            "UPDATE attendance_logs SET felica_id=? WHERE felica_id=?",
+                            (felica_id, old['felica_id'])
+                        )
                     conn.execute("""
                         UPDATE users SET felica_id=?, name=?, email=?
                         WHERE user_id=?

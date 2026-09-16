@@ -2,13 +2,34 @@
 # -*- coding: utf-8 -*-
 """
 config.py.example
-このファイルを config.py にコピーして設定してください。
-cp config.py.example config.py
+このファイルを config.py にコピーしてください（内容は変更不要）。
+  cp config.py.example config.py
+
+秘密情報（SECRET_KEY, ADMIN_PASSWORD, API_KEY, MAIL_USERNAME, MAIL_PASSWORD 等）は
+config.py には書かず、同じディレクトリの .env ファイルに設定する。
+  cp .env.example .env
+  nano .env
 """
-from pathlib import Path
+import os
 
 # ベースディレクトリ
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load_env_file(path):
+    """.env ファイル（KEY=VALUE 形式）を os.environ に読み込む。既存の環境変数は上書きしない。"""
+    if not os.path.exists(path):
+        return
+    with open(path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, _, value = line.partition('=')
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_env_file(os.path.join(BASE_DIR, '.env'))
 
 # データベース設定
 DB_PATH = os.path.join(BASE_DIR, 'data', 'attendance.db')
@@ -25,32 +46,26 @@ LOG_DIR = os.path.join(BASE_DIR, 'logs')
 UPLOAD_FOLDER      = os.path.join(BASE_DIR, 'uploads')
 ALLOWED_EXTENSIONS = {'csv'}
 
-# Flask設定
-SECRET_KEY = 'your-secret-key-here'  # 本番環境では必ず変更すること
+# Flask設定（.env の SECRET_KEY を必須で読み込む）
+SECRET_KEY = os.environ['SECRET_KEY']
 
-# メール設定（後程設定）
-#MAIL_SERVER   = 'smtp.your-domain.com'
-#MAIL_PORT     = 587
-#MAIL_USE_TLS  = True
-#MAIL_USERNAME = 'your-email@your-domain.com'
-#MAIL_PASSWORD = 'your-password'
-#MAIL_FROM     = 'attendance@your-domain.com'
-MAIL_SERVER   = 'smtp.your-domain.com'
-MAIL_PORT     = 587
-MAIL_USE_TLS  = True
-MAIL_USERNAME = 'your-email@your-domain.com'      # ← Gmail アドレス
-MAIL_PASSWORD = 'xxxx xxxx xxxx xxxx'        # ← Googleアプリパスワード（16文字）
-MAIL_FROM     = 'attendance@your-domain.com'       # ← MAIL_USERNAME と同じでOK
+# メール設定（すべて .env で設定する）
+MAIL_SERVER   = os.environ['MAIL_SERVER']
+MAIL_PORT     = int(os.environ['MAIL_PORT'])
+MAIL_USE_TLS  = os.environ['MAIL_USE_TLS'].lower() == 'true'
+MAIL_USERNAME = os.environ['MAIL_USERNAME']
+MAIL_PASSWORD = os.environ['MAIL_PASSWORD']
+MAIL_FROM     = os.environ['MAIL_FROM']
 
-# 締め日設定（デフォルト: 20日締め）
-DEFAULT_CUTOFF_DAY = 20
+# 締め日設定
+DEFAULT_CUTOFF_DAY = int(os.environ['DEFAULT_CUTOFF_DAY'])
 
 # 管理画面認証情報
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'PASSWORD')
+ADMIN_USERNAME = os.environ['ADMIN_USERNAME']
+ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
 
-# APIキー（クライアント認証用）← 追加
-API_KEY = os.environ.get('API_KEY', 'your-api-key-here')
+# APIキー（クライアント認証用）
+API_KEY = os.environ['API_KEY']
 
 # ディレクトリ作成
 for directory in [

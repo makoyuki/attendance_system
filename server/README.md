@@ -28,8 +28,10 @@ attendance/
 ├── processor.py           # 勤怠ログ処理エンジン
 ├── notifier.py            # メール通知共通ロジック
 ├── mailer.py              # Gmail 送信
-├── config.py              # 設定ファイル（要作成）
+├── config.py              # 設定ファイル（要作成。秘密情報は含まない）
 ├── config.py.example      # 設定ファイルテンプレート
+├── .env                   # 秘密情報（要作成、git 管理外）
+├── .env.example           # .env のテンプレート
 ├── cron/
 │   ├── send_notification.py  # 定期通知スクリプト
 │   ├── daily.sh              # 日次 CSV 生成
@@ -64,15 +66,20 @@ pip install -r requirements.txt
 
 ### 3. 設定ファイルを作成
 
+`config.py` 自体は秘密情報を含まない共通コードなので、そのまま `config.py.example` をコピーする。
+実際の秘密情報は同じディレクトリの `.env`（git 管理外）に設定する。
+
 ```bash
 cp config.py.example config.py
-nano config.py
+cp .env.example .env
+nano .env
 ```
 
-設定が必要な項目：
+`.env` に設定が必要な項目：
 
 | 項目 | 説明 |
 |------|------|
+| `SECRET_KEY` | Flaskのセッション署名鍵。`python3 -c "import secrets; print(secrets.token_hex(32))"` 等で生成したランダム値にすること |
 | `ADMIN_USERNAME` | 管理画面ログインユーザー名 |
 | `ADMIN_PASSWORD` | 管理画面ログインパスワード |
 | `API_KEY` | 打刻端末との認証キー |
@@ -80,6 +87,8 @@ nano config.py
 | `MAIL_PASSWORD` | Google アプリパスワード（16桁） |
 | `MAIL_FROM` | 送信元アドレス |
 | `DEFAULT_CUTOFF_DAY` | 月次締め日（デフォルト: 20） |
+
+`config.py` と `.env` はどちらも `.gitignore` 対象。誤って `git add -f` 等で追跡しないこと。
 
 ### 4. ディレクトリ作成
 

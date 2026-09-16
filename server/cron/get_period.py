@@ -14,7 +14,7 @@ import os
 import argparse
 from datetime import date
 
-sys.path.append('/home/makoyuki/attendance')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import DEFAULT_CUTOFF_DAY
 
 

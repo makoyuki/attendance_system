@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import LOG_DIR, API_KEY
+from config import LOG_DIR, API_KEY, SECRET_KEY
 from app.db import get_connection, initialize_db
 
 # ログ設定
@@ -21,7 +21,7 @@ logging.basicConfig(
 )
 
 app = Flask(__name__, template_folder='../templates')
-app.secret_key = 'your-secret-key-here'
+app.secret_key = SECRET_KEY
 app.json.ensure_ascii = False
 from datetime import timedelta
 
@@ -77,6 +77,9 @@ def log_attendance():
         for field in required_fields:
             if field not in data:
                 return jsonify({'status': 'error', 'message': f'{field}が不足しています'}), 400
+
+        if data['log_type'] not in ('IN', 'OUT'):
+            return jsonify({'status': 'error', 'message': 'log_typeはINまたはOUTである必要があります'}), 400
 
         with get_connection() as conn:
             cur = conn.cursor()
