@@ -355,6 +355,60 @@ print('完了')
 "
 ```
 
+### config.py / .env への移行（既存環境のアップグレード）
+
+以前は秘密情報を `config.py` に直接書き込んでいたが、`.env`（git管理外）から読み込む方式に変更した。
+すでに稼働中の環境で `config.py` をまだ移行していない場合は、以下の手順で更新する。
+
+1. **現在の `server/config.py` を開き、以下の値を控えておく**（この後上書きするため）
+   - `ADMIN_USERNAME` / `ADMIN_PASSWORD`
+   - `API_KEY`
+   - `MAIL_SERVER` / `MAIL_PORT` / `MAIL_USE_TLS` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `MAIL_FROM`
+   - `DEFAULT_CUTOFF_DAY`
+
+2. **最新コードを取得する**（`config.py` は `.gitignore` 対象なので `git pull` では上書きされない）
+   ```bash
+   cd /home/makoyuki/attendance
+   git pull
+   ```
+
+3. **`config.py` を新しいテンプレートで上書きする**
+   ```bash
+   cp config.py.example config.py
+   ```
+
+4. **`.env` を作成し、控えた値を設定する**
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+   - `SECRET_KEY` は新しくランダム生成した値にする（旧コードの固定値 `'your-secret-key-here'` は使い回さない）
+     ```bash
+     python3 -c "import secrets; print(secrets.token_hex(32))"
+     ```
+   - `ADMIN_PASSWORD` と `MAIL_PASSWORD`（Gmailアプリパスワード）は、`config.py` が過去にgit履歴へ
+     コミットされていた経緯があるため、控えた値をそのまま使うのではなく **このタイミングで新しい値に
+     変更する**ことを強く推奨する。
+     - Gmail: Googleアカウント → セキュリティ → アプリパスワード で再発行し `MAIL_PASSWORD` に設定
+     - 管理画面ログイン: `ADMIN_PASSWORD` に新しい値を設定するだけでよい
+   - `API_KEY` を変更する場合は、打刻端末側（`client/config.py` の `API_KEY`）も同じ値に更新しないと
+     打刻が `401` で失敗するので注意（変更しないなら控えた値をそのまま `.env` に設定すればよい）
+
+5. **パーミッションを絞る（推奨）**
+   ```bash
+   chmod 600 config.py .env
+   ```
+
+6. **サービス再起動**
+   ```bash
+   sudo systemctl restart attendance-service
+   ```
+
+7. **動作確認**
+   - `https://your-domain.com/admin` に新しい `ADMIN_PASSWORD` でログインできるか
+   - 打刻端末からの `POST /api/log` が通るか（`API_KEY` を変更した場合は client 側の更新も忘れずに）
+   - 管理画面の「設定」から通知メールが送信できるか（Gmailパスワードを変更した場合）
+
 ---
 
 ## 注意事項
