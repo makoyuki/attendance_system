@@ -19,8 +19,12 @@ FeliCa カードを使った入退室記録・勤怠管理システムです。
 
 ## ディレクトリ構成
 
+リポジトリ本体（`attendance_system`）は `client/` と `server/` の2部構成。
+サーバーは以下の `server/` 配下をそのままデプロイ先（例: `/home/makoyuki/attendance/server`）に
+クローンして使う（後述のインストール手順を参照）。
+
 ```
-attendance/
+server/
 ├── app/
 │   ├── server.py          # Flask アプリ本体
 │   ├── admin.py           # 管理画面 Blueprint
@@ -51,9 +55,11 @@ attendance/
 
 ### 1. リポジトリをクローン
 
+リポジトリ全体（`client/`・`server/`）をクローンし、サーバーは `server/` ディレクトリの中で作業する。
+
 ```bash
-git clone https://github.com/yourname/attendance.git
-cd attendance
+git clone git@github.com:makoyuki/attendance_system.git attendance
+cd attendance/server
 ```
 
 ### 2. 仮想環境を作成・有効化
@@ -105,7 +111,6 @@ venv/bin/python -c "from app.db import initialize_db; initialize_db()"
 ### 6. 動作確認
 
 ```bash
-cd attendance
 venv/bin/python app/server.py
 ```
 
@@ -117,7 +122,7 @@ venv/bin/python app/server.py
 
 ### systemd サービス登録
 
-`/etc/systemd/system/attendance-service.service` を作成：
+`/etc/systemd/system/attendance.service` を作成：
 
 ```ini
 [Unit]
@@ -126,8 +131,8 @@ After=network.target
 
 [Service]
 User=makoyuki
-WorkingDirectory=/home/makoyuki/attendance
-ExecStart=/home/makoyuki/attendance/venv/bin/gunicorn \
+WorkingDirectory=/home/makoyuki/attendance/server
+ExecStart=/home/makoyuki/attendance/server/venv/bin/gunicorn \
     -w 2 \
     -b 127.0.0.1:5000 \
     app.server:app
@@ -138,10 +143,16 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
+秘密情報（`ADMIN_PASSWORD`/`API_KEY`/`SECRET_KEY`等）は `.env` から読み込まれるので、
+ここに `Environment=ADMIN_PASSWORD=...` のような行を追加しないこと。`config.py` の
+`_load_env_file()` は既存の環境変数を上書きしないため、systemdの `Environment=` で
+値を設定すると `.env` の値より優先されてしまい、`.env` を更新してもサービスに反映されない
+（実際にこれで `.env` 移行後もパスワードが変わらない事故が起きた）。
+
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable attendance-service
-sudo systemctl start attendance-service
+sudo systemctl enable attendance.service
+sudo systemctl start attendance.service
 ```
 
 ### Nginx 設定例
@@ -170,13 +181,13 @@ crontab -e
 
 ```cron
 # 日次 CSV 生成（毎日 5:00）
-0 5 * * * /home/makoyuki/attendance/cron/daily.sh >> /home/makoyuki/attendance/logs/cron.log 2>&1
+0 5 * * * /home/makoyuki/attendance/server/cron/daily.sh >> /home/makoyuki/attendance/server/logs/cron.log 2>&1
 
 # 月次 CSV 生成（毎日 5:30）
-30 5 * * * /home/makoyuki/attendance/cron/monthly.sh >> /home/makoyuki/attendance/logs/cron.log 2>&1
+30 5 * * * /home/makoyuki/attendance/server/cron/monthly.sh >> /home/makoyuki/attendance/server/logs/cron.log 2>&1
 
 # メール通知（毎日 6:00）
-0 6 * * * /home/makoyuki/attendance/cron/notify.sh >> /home/makoyuki/attendance/logs/cron.log 2>&1
+0 6 * * * /home/makoyuki/attendance/server/cron/notify.sh >> /home/makoyuki/attendance/server/logs/cron.log 2>&1
 ```
 
 ---
@@ -186,8 +197,8 @@ crontab -e
 1. Google アカウントの「2段階認証」を有効にする
 2. [Google アカウント] → [セキュリティ] → [アプリパスワード] を開く
 3. 「メール」「その他のデバイス」で16桁のパスワードを生成
-4. `config.py` の `MAIL_PASSWORD` に設定する
-5. サービス再起動: `sudo systemctl restart attendance-service`
+4. `.env` の `MAIL_PASSWORD` に設定する
+5. サービス再起動: `sudo systemctl restart attendance.service`
 
 ---
 
@@ -322,13 +333,13 @@ python card_register.py
 ### サービスが起動しない
 
 ```bash
-sudo journalctl -u attendance-service -n 50 --no-pager
+sudo journalctl -u attendance.service -n 50 --no-pager
 ```
 
 ### メールが送信されない
 
 ```bash
-cd /home/makoyuki/attendance
+cd /home/makoyuki/attendance/server
 venv/bin/python -c "
 import sys; sys.path.insert(0, '.')
 from notifier import send_admin_report, get_prev_week_range
@@ -368,7 +379,7 @@ print('完了')
 
 2. **最新コードを取得する**（`config.py` は `.gitignore` 対象なので `git pull` では上書きされない）
    ```bash
-   cd /home/makoyuki/attendance
+   cd /home/makoyuki/attendance/server
    git pull
    ```
 
@@ -401,7 +412,7 @@ print('完了')
 
 6. **サービス再起動**
    ```bash
-   sudo systemctl restart attendance-service
+   sudo systemctl restart attendance.service
    ```
 
 7. **動作確認**

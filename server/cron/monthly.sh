@@ -2,9 +2,10 @@
 # monthly.sh - 月次集計（締め日は config.py の DEFAULT_CUTOFF_DAY を参照）
 # 毎日実行されるが、締め日翌日のみ実処理する
 
-PYTHON=/home/makoyuki/attendance/venv/bin/python
-SCRIPT=/home/makoyuki/attendance/processor.py
-HELPER=/home/makoyuki/attendance/cron/get_period.py
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PYTHON="$BASE_DIR/venv/bin/python"
+SCRIPT="$BASE_DIR/processor.py"
+HELPER="$BASE_DIR/cron/get_period.py"
 
 # ── 今日が実行日かチェック ──────────────────
 IS_RUN_DAY=$($PYTHON $HELPER --check)

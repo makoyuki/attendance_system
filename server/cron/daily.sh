@@ -1,8 +1,9 @@
 #!/bin/bash
 # daily.sh - 前日分の日次集計
 
-PYTHON=/home/makoyuki/attendance/venv/bin/python
-SCRIPT=/home/makoyuki/attendance/processor.py
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PYTHON="$BASE_DIR/venv/bin/python"
+SCRIPT="$BASE_DIR/processor.py"
 
 TARGET=$(date -d yesterday +%Y-%m-%d)
 

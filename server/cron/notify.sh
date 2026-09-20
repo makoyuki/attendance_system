@@ -1,8 +1,9 @@
 #!/bin/bash
 # notify.sh - 通知メール送信バッチ
 
-PYTHON=/home/makoyuki/attendance/venv/bin/python
-SCRIPT=/home/makoyuki/attendance/cron/send_notification.py
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PYTHON="$BASE_DIR/venv/bin/python"
+SCRIPT="$BASE_DIR/cron/send_notification.py"
 
 echo "========================================"
 echo "[通知バッチ] 開始: $(date '+%Y-%m-%d %H:%M:%S')"
